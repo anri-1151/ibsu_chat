@@ -143,17 +143,21 @@ var log = function(msg) {
 
 /* In this array we store all opened socket connections. */
 var connections = [];
-
+var sms=[];
 /* 
  * Key for this object is connected usernames. Value is true if username
  * still has active connection, false otherwise.
  */
 var userNameCache = {};
 
+
+
 // create the web socket server
 var wsServer = new WebSocketServer({
 	httpServer: server
 });
+
+var p=true;
 
 wsServer.on('request', function(request) {
 	var connection = request.accept(null, request.origin);
@@ -176,18 +180,56 @@ wsServer.on('request', function(request) {
 			return;
 		}
 		
+		
+		
 		if (msg.type === 'username') {
-			username = msg.username;	
-			userNameCache[username] = true;
+		    
+			username = msg.username;
+            
+			
+			if (userNameCache[username]) {
+				log('aseti useri aris');
+				username=null;
+				connection.send(JSON.stringify({
+				    type:'username',
+					username:'',
+					msg:'asa'
+				}));;
+				
+            } else {	
+				userNameCache[username] = true; 
+				log('useri mienicha');
+			}
+				
+			console.log(connections.length);
+                        
+			var begin=0;
+			if (sms.length>10) {
+				begin=sms.length-10;
+			} else {
+				begin=0;
+			}
+			
+			for (var j=begin,l=sms.length; j<l; j++) {
+				//console.log(sms[j]['message from']+" "+sms[j]['msg']);	
+				connection.send(JSON.stringify({
+					type: 'msg',
+					username: sms[j]['message from'],
+					msg: sms[j]['msg']
+				}));
+			}
+			
 			log('user set username:' + username);
 		} else if (msg.type === 'msg') {
 			log('messge from: ' + username + '. msg=' + msg.msg);
+			sms.push({'message from':username,'msg':msg.msg});
 			for (var i=0,l=connections.length; i<l; i++) {
 				connections[i].send(JSON.stringify({
 					type: 'msg',
 					username: username,
 					msg: msg.msg
 				}));
+				
 			}
 		}
 	});
@@ -195,8 +237,11 @@ wsServer.on('request', function(request) {
 	/* Event when client closes connection (closes browser tab) */
 	connection.on('close', function(connection) {
 		log('user quited. (' + username + ')');
-		userNameCache[username] = false;
+		if (username!=null) {
+			userNameCache[username] = false;
+		}
 		connections.splice(connections.indexOf(connection), 1);
 	});
 });
+
 

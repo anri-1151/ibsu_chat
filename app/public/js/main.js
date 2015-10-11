@@ -54,7 +54,13 @@
 
 		connection.onmessage = function (message) {
 			var data = JSON.parse(message.data);
-			chatArea.addChild(El('div', data.username + ': ' + data.msg));
+			if (data.type=='username') {
+			    alert("Such user already exists");
+				location.reload();
+				//location.assign("http://localhost:7777");
+			} else {
+				chatArea.addChild(El('div', data.username + ': ' + data.msg));
+			}
 		};
 	};
 
@@ -114,10 +120,14 @@
 
 		messageField = El('input', {
 			type: 'text',
-			class: 'message-field'
+			class: 'message-field',
+		}).on('keypress', function(){
+			if (event.keyCode == 13) {
+                document.getElementById('btnSend').click();
+		    }
 		});
 		
-		var messageSendButton = El('input', {type: 'button', value: 'Send'}).on('click', function() {
+		var messageSendButton = El('input', {type: 'button', value: 'Send', id:'btnSend'}).on('click', function() {
 			var msg = messageField.el.value;
 			if (!msg) {
 				return;
